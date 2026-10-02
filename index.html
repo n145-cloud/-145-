@@ -1,0 +1,1086 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Экстремальная Химическая Лаборатория v3.0</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: #080b10;
+            color: #c9d1d9;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            margin: 0;
+            padding: 15px;
+            text-align: center;
+            transition: background 0.5s;
+            user-select: none;
+            overflow-x: hidden;
+        }
+
+        body.dirty-lab {
+            background-color: #120a07 !important;
+            background-image: radial-gradient(#2d150a 15%, transparent 20%);
+            background-size: 25px 25px;
+        }
+
+        .crack-screen::before {
+            content: "";
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background: radial-gradient(circle, transparent 30%, rgba(0,0,0,0.8) 100%),
+                        linear-gradient(45deg, transparent 48%, rgba(255,255,255,0.1) 50%, transparent 52%);
+            pointer-events: none;
+            z-index: 9998;
+        }
+
+        .shake {
+            animation: shakeAnim 0.5s cubic-bezier(.36,.07,.19,.97) both;
+        }
+
+        @keyframes shakeAnim {
+            10%, 90% { transform: translate3d(-8px, -4px, 0); }
+            20%, 80% { transform: translate3d(10px, 6px, 0); }
+            30%, 50%, 70% { transform: translate3d(-12px, -8px, 0); }
+            40%, 60% { transform: translate3d(12px, 8px, 0); }
+        }
+
+        h1 { 
+            color: #58a6ff; 
+            margin-top: 5px;
+            margin-bottom: 5px; 
+            font-size: 24px;
+            text-shadow: 0 0 10px rgba(88, 166, 255, 0.3);
+        }
+        .subtitle { 
+            color: #8b949e; 
+            margin-bottom: 15px; 
+            font-size: 13px;
+        }
+
+        .container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 15px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .card {
+            background: #11161d;
+            border: 1px solid #21262d;
+            border-radius: 12px;
+            padding: 15px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.7);
+            flex: 1 1 300px;
+            min-width: 280px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* КНОПКА ОТКРЫТИЯ ЗАКРЫТОГО БЛОКНОТА */
+        .notebook-toggle-btn {
+            position: fixed;
+            top: 15px;
+            right: 15px;
+            background: #1f6feb;
+            color: #fff;
+            border: none;
+            padding: 10px 14px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 13px;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+            z-index: 999;
+            display: none;
+        }
+
+        /* БЛОКНОТ РЕЦЕПТОВ С ВОЗМОЖНОСТЬЮ ЗАКРЫТИЯ */
+        .recipe-notebook {
+            position: fixed;
+            top: 15px;
+            right: 15px;
+            width: 330px;
+            max-height: 85vh;
+            background: #161b22;
+            border: 2px solid #58a6ff;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.9);
+            z-index: 1000;
+            text-align: left;
+            display: flex;
+            flex-direction: column;
+            transition: opacity 0.3s transform 0.3s;
+        }
+
+        .recipe-notebook.hidden {
+            display: none !important;
+        }
+
+        .notebook-header {
+            background: #1f6feb;
+            color: #ffffff;
+            padding: 10px 14px;
+            font-weight: bold;
+            font-size: 13px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-radius: 8px 8px 0 0;
+            letter-spacing: 0.5px;
+        }
+
+        .close-notebook-btn {
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            border-radius: 50%;
+            width: 22px;
+            height: 22px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+        }
+
+        .close-notebook-btn:hover {
+            background: #da3633;
+        }
+
+        .notebook-content {
+            padding: 10px;
+            overflow-y: auto;
+            max-height: 70vh;
+            font-size: 12px;
+            line-height: 1.4;
+        }
+
+        .recipe-card {
+            background: #0d1117;
+            border: 1px solid #30363d;
+            border-left: 4px solid #238636;
+            border-radius: 6px;
+            padding: 8px;
+            margin-bottom: 8px;
+        }
+
+        .recipe-card.exotic {
+            border-left-color: #a371f7;
+        }
+
+        .recipe-card.new-recipe {
+            border-left-color: #ff7675;
+        }
+
+        .recipe-title {
+            color: #58a6ff;
+            font-weight: bold;
+            margin-bottom: 4px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        /* Лабораторный стол */
+        .lab-bench {
+            position: relative;
+            width: 100%;
+            max-width: 320px;
+            height: 300px;
+            margin: 10px auto;
+            border-bottom: 4px solid #30363d;
+            background: radial-gradient(ellipse at bottom, #1f242d 0%, transparent 70%);
+            overflow: hidden;
+        }
+
+        .flask-wrapper {
+            position: absolute;
+            bottom: 25px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 160px;
+            height: 220px;
+            z-index: 2;
+            transition: filter 0.3s;
+        }
+
+        .flask-svg {
+            width: 100%;
+            height: 100%;
+            filter: drop-shadow(0px 8px 16px rgba(0,0,0,0.6));
+        }
+
+        .glow-effect {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none;
+            mix-blend-mode: screen;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+            z-index: 3;
+        }
+
+        #particles-canvas {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 20;
+        }
+
+        #snake-canvas {
+            position: absolute;
+            bottom: 20px;
+            left: 0;
+            width: 100%;
+            height: 280px;
+            pointer-events: none;
+            z-index: 15;
+        }
+
+        .burner {
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 70px;
+            height: 25px;
+            background: #21262d;
+            border-top: 3px solid #484f58;
+            border-radius: 4px 4px 0 0;
+            z-index: 1;
+        }
+
+        .fire-flame {
+            position: absolute;
+            bottom: 22px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 30px;
+            height: 0px;
+            background: radial-gradient(circle at bottom, #fff 10%, #ff9f43 50%, #ee5253 80%, transparent 100%);
+            border-radius: 50% 50% 20% 20%;
+            filter: blur(2px);
+            opacity: 0;
+            transition: height 0.2s, opacity 0.2s;
+            animation: flameFlicker 0.1s infinite alternate;
+        }
+
+        @keyframes flameFlicker {
+            0% { transform: translateX(-50%) scaleX(0.9) rotate(-1deg); }
+            100% { transform: translateX(-50%) scaleX(1.1) rotate(1deg); }
+        }
+
+        #shards-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            pointer-events: none;
+            z-index: 9999;
+            overflow: hidden;
+        }
+
+        .glass-shard {
+            position: absolute;
+            background: linear-gradient(135deg, rgba(255,255,255,0.9), rgba(139,148,158,0.3));
+            border: 1px solid rgba(255,255,255,0.8);
+            box-shadow: 0 0 12px rgba(255,255,255,0.6);
+            animation: shardFly 1.4s cubic-bezier(0.1, 0.8, 0.2, 1) forwards;
+        }
+
+        @keyframes shardFly {
+            0% { transform: translate(0, 0) rotate(0deg) scale(1); opacity: 1; }
+            100% { transform: translate(var(--dx), var(--dy)) rotate(var(--rot)) scale(0.3); opacity: 0; }
+        }
+
+        .flash-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background: #fff;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.1s ease-in;
+            z-index: 10000;
+        }
+
+        .status-panel {
+            background: #0d1117;
+            padding: 10px;
+            border-radius: 8px;
+            margin-top: 10px;
+            border: 1px solid #21262d;
+        }
+
+        .danger-meter {
+            height: 10px;
+            width: 100%;
+            background: #21262d;
+            border-radius: 5px;
+            overflow: hidden;
+            margin-top: 6px;
+        }
+
+        .danger-fill {
+            height: 100%;
+            width: 0%;
+            background: #238636;
+            transition: width 0.3s, background-color 0.3s;
+        }
+
+        .state-tag {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: bold;
+            background: #21262d;
+            color: #8b949e;
+            margin-left: 5px;
+        }
+
+        .btn {
+            background: #238636;
+            color: #ffffff;
+            border: none;
+            padding: 8px 12px;
+            margin: 3px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            touch-action: manipulation;
+            font-size: 12px;
+            transition: background 0.2s, transform 0.1s;
+        }
+
+        .btn:active { transform: scale(0.95); }
+        .btn-heat { background: #da3633; }
+        .btn-exotic { background: #8957e5; }
+        .btn-reset { background: #30363d; width: 100%; margin-top: 10px; font-size: 13px; padding: 10px; }
+
+        .search-input {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 8px;
+            background: #0d1117;
+            border: 1px solid #30363d;
+            color: #fff;
+            border-radius: 6px;
+            font-size: 12px;
+        }
+
+        .periodic-table {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 5px;
+            max-height: 280px;
+            overflow-y: auto;
+        }
+
+        .element {
+            background: #161b22;
+            border: 1px solid #30363d;
+            padding: 6px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 11px;
+            text-align: left;
+        }
+
+        .element:hover { border-color: #58a6ff; background: #21262d; }
+
+        .log-box {
+            background: #05070a;
+            color: #3fb950;
+            font-family: 'Consolas', 'Courier New', monospace;
+            padding: 10px;
+            border-radius: 6px;
+            height: 140px;
+            overflow-y: auto;
+            text-align: left;
+            font-size: 11px;
+            border: 1px solid #21262d;
+            line-height: 1.5;
+        }
+
+        @media (max-width: 768px) {
+            body { padding: 8px; }
+            h1 { font-size: 20px; }
+            .recipe-notebook {
+                width: 290px;
+                top: 10px;
+                right: 10px;
+            }
+            .container { flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="flash" class="flash-overlay"></div>
+    <div id="shards-overlay"></div>
+
+    <!-- КНОПКА ОТКРЫТИЯ БЛОКНОТА -->
+    <button class="notebook-toggle-btn" id="openNotebookBtn" onclick="openNotebook()">📖 Рецепты</button>
+
+    <!-- БЛОКНОТ РЕЦЕПТОВ -->
+    <div class="recipe-notebook" id="notebook">
+        <div class="notebook-header">
+            <span>📖 Лабораторная Книга (Рецепты)</span>
+            <button class="close-notebook-btn" onclick="closeNotebook()" title="Закрыть блокнот">✕</button>
+        </div>
+        <div class="notebook-content">
+            <!-- 5 НОВЫХ РЕЦЕПТОВ -->
+            <div class="recipe-card new-recipe">
+                <div class="recipe-title">1. Адское Пламя Серы 🔥 NEW</div>
+                <b>Реагенты:</b> Сера (S) + Нагрев (>444°C)<br>
+                <b>Эффект:</b> Ядовито-синий дым и бурлящее пламя.
+            </div>
+            <div class="recipe-card new-recipe">
+                <div class="recipe-title">2. Белый Фосфор ⚡ NEW</div>
+                <b>Реагенты:</b> Фосфор (P) + Кислород (O)<br>
+                <b>Эффект:</b> Мгновенное самовозгорание с ярким белым огнём.
+            </div>
+            <div class="recipe-card new-recipe">
+                <div class="recipe-title">3. Калиевая Вспышка 💥 NEW</div>
+                <b>Реагенты:</b> Калий (K) + Вода (H₂O)<br>
+                <b>Эффект:</b> Мощнейший фиолетовый гидроксидный взрыв.
+            </div>
+            <div class="recipe-card new-recipe">
+                <div class="recipe-title">4. Искры Титана 🌟 NEW</div>
+                <b>Реагенты:</b> Титан (Ti) + Кислота (HCl) + Нагрев<br>
+                <b>Эффект:</b> Искрение и серебристый жидкий металл.
+            </div>
+            <div class="recipe-card new-recipe">
+                <div class="recipe-title">5. Зеркальное Серебро 🪞 NEW</div>
+                <b>Реагенты:</b> Серебро (Ag) + Перекись (H₂O₂)<br>
+                <b>Эффект:</b> Зеркальный глянец на колбе и эффект блеска.
+            </div>
+
+            <!-- СТАРЫЕ ЭКЗОТИЧЕСКИЕ РЕЦЕПТЫ -->
+            <div class="recipe-card exotic">
+                <div class="recipe-title">6. Хемилюминесценция 🌟</div>
+                <b>Реагенты:</b> Люминол + Перекись (H₂O₂)<br>
+                <b>Эффект:</b> Неоново-синее свечение жидкости.
+            </div>
+            <div class="recipe-card exotic">
+                <div class="recipe-title">7. Фараонова Змея 🐍</div>
+                <b>Реагенты:</b> Глюконат + Нагрев (>300°C)<br>
+                <b>Эффект:</b> Из колбы вырастает гигантский червь!
+            </div>
+            <div class="recipe-card exotic">
+                <div class="recipe-title">8. Озеро Крови (Коллоид) 🩸</div>
+                <b>Реагенты:</b> Железо (Fe) + Кислота (HCl) + Перекись<br>
+                <b>Эффект:</b> Кроваво-красный гель.
+            </div>
+            <div class="recipe-card exotic">
+                <div class="recipe-title">9. Крио-Заморозка ❄️</div>
+                <b>Реагенты:</b> Жидкий Азот (N₂)<br>
+                <b>Эффект:</b> Иней на колбе и ледяной пар.
+            </div>
+            <div class="recipe-card exotic">
+                <div class="recipe-title">10. Царская Водка 👑</div>
+                <b>Реагенты:</b> Кислота (HCl) + Золото (Au) + Нагрев<br>
+                <b>Эффект:</b> Растворение золота.
+            </div>
+        </div>
+    </div>
+
+    <h1>🧪 Экстремальная Лаборатория v3.0</h1>
+    <div class="subtitle">20 Важных элементов • Закрываемый блокнот • Новые реакции</div>
+
+    <div class="container">
+        
+        <div class="card">
+            <h3>🧪 Реагенты и Компоненты</h3>
+            <div id="quick-reagents">
+                <button class="btn" id="btn-H2O">💧 Вода (H₂O)</button>
+                <button class="btn" id="btn-HCl">🧪 Кислота HCl</button>
+                <button class="btn" id="btn-H2O2">💧 Перекись H₂O₂</button>
+                <button class="btn btn-exotic" id="btn-Luminol">🌟 Люминол</button>
+                <button class="btn btn-exotic" id="btn-Gluconate">💊 Глюконат</button>
+                <button class="btn btn-exotic" id="btn-N2">❄️ Азот (LN₂)</button>
+                <button class="btn btn-heat" id="btn-heat">🔥 Зажать Огонь</button>
+            </div>
+
+            <h3>⚛ Таблица Элементов (20 Топовых)</h3>
+            <input type="text" id="searchInput" class="search-input" placeholder="Поиск элемента..." onkeyup="filterElements()">
+            
+            <div class="periodic-table" id="periodicTable"></div>
+        </div>
+
+        <div class="card">
+            <h3>🔬 Лабораторный стол</h3>
+            
+            <div class="lab-bench" id="lab-bench">
+                <canvas id="particles-canvas"></canvas>
+                <canvas id="snake-canvas"></canvas>
+
+                <div class="flask-wrapper" id="flask-wrapper">
+                    <div id="flask-glow" class="glow-effect"></div>
+
+                    <svg id="flask-svg" class="flask-svg" viewBox="0 0 100 130">
+                        <defs>
+                            <clipPath id="flask-clip">
+                                <path d="M 41 12 L 59 12 L 59 40 L 91 114 C 95 125, 85 127, 78 127 L 22 127 C 15 127, 5 125, 9 114 L 41 40 Z" />
+                            </clipPath>
+                            <linearGradient id="frost-grad" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0%" stop-color="#ffffff" stop-opacity="0.8"/>
+                                <stop offset="100%" stop-color="#a55eea" stop-opacity="0.2"/>
+                            </linearGradient>
+                            <linearGradient id="silver-mirror" x1="0" y1="0" x2="1" y2="1">
+                                <stop offset="0%" stop-color="#dcdde1"/>
+                                <stop offset="50%" stop-color="#ffffff"/>
+                                <stop offset="100%" stop-color="#718093"/>
+                            </linearGradient>
+                        </defs>
+
+                        <path id="liquid-path" d="M 9 127 L 91 127 L 91 127 L 9 127 Z" fill="#1e90ff" opacity="0.85" clip-path="url(#flask-clip)" style="transition: fill 0.5s;" />
+                        
+                        <path id="frost-layer" d="M 41 12 L 59 12 L 59 40 L 91 114 C 95 125, 85 127, 78 127 L 22 127 C 15 127, 5 125, 9 114 L 41 40 Z" fill="url(#frost-grad)" opacity="0" style="transition: opacity 1s;" />
+
+                        <path d="M 38 8 L 62 8 L 62 10 L 60 10 L 60 40 L 92 115 C 97 127, 85 129, 80 129 L 20 129 C 15 129, 3 127, 8 115 L 40 40 L 40 10 L 38 10 Z" fill="none" stroke="#8b949e" stroke-width="3" stroke-linejoin="round" id="flask-glass-border" />
+                        <path d="M 43 42 L 18 108" stroke="rgba(255,255,255,0.3)" stroke-width="3" stroke-linecap="round" />
+
+                        <rect id="solid-in-flask" x="35" y="115" width="30" height="12" rx="3" fill="#8b949e" display="none" style="transition: transform 0.5s, fill 0.5s;" />
+                    </svg>
+                </div>
+
+                <div class="burner">
+                    <div id="flame" class="fire-flame"></div>
+                </div>
+            </div>
+
+            <div id="contents-text">Заполнено: <b>0%</b> | Состав: <i>Пусто</i></div>
+
+            <div class="status-panel">
+                <div style="margin-bottom: 5px;">
+                    🌡 Температура: <b id="temp-text" style="color: #ff7675;">20°C</b>
+                    <span id="state-tag" class="state-tag">Жидкое</span>
+                </div>
+                <div>Уровень опасности: <b id="danger-text">Безопасно (0%)</b></div>
+                <div class="danger-meter">
+                    <div id="danger-fill" class="danger-fill"></div>
+                </div>
+            </div>
+
+            <button class="btn btn-reset" onclick="resetLab()">Очистить и восстановить 🧼</button>
+        </div>
+
+        <div class="card">
+            <h3>📋 Аналитический журнал</h3>
+            <div id="log" class="log-box">> Системы лаборатории активны...<br></div>
+        </div>
+
+    </div>
+
+    <script>
+        // 20 САМЫХ ВАЖНЫХ ЭЛЕМЕНТОВ
+        const elementsData = [
+            { num: 1, sym: 'H', name: 'Водород', state: 'gas', danger: 15, color: '#3498db' },
+            { num: 2, sym: 'He', name: 'Гелий', state: 'gas', danger: 0, color: '#f1c40f' },
+            { num: 3, sym: 'Li', name: 'Литий', state: 'solid', danger: 40, color: '#e67e22', meltTemp: 180, liquidColor: '#ff793f' },
+            { num: 6, sym: 'C', name: 'Углерод', state: 'solid', danger: 0, color: '#2d3436', meltTemp: 3550, liquidColor: '#000000' },
+            { num: 7, sym: 'N', name: 'Азот', state: 'gas', danger: 5, color: '#a55eea' },
+            { num: 8, sym: 'O', name: 'Кислород', state: 'gas', danger: 10, color: '#ff7675' },
+            { num: 9, sym: 'F', name: 'Фтор', state: 'gas', danger: 80, color: '#26de81' },
+            { num: 11, sym: 'Na', name: 'Натрий', state: 'solid', danger: 65, color: '#d1d8e0', meltTemp: 98, liquidColor: '#f7b731' },
+            { num: 12, sym: 'Mg', name: 'Магний', state: 'solid', danger: 30, color: '#b2bec3', meltTemp: 650, liquidColor: '#ffffff' },
+            { num: 15, sym: 'P', name: 'Фосфор', state: 'solid', danger: 70, color: '#ff4d4d', meltTemp: 280, liquidColor: '#ff3838' },
+            { num: 16, sym: 'S', name: 'Сера', state: 'solid', danger: 25, color: '#f1c40f', meltTemp: 115, liquidColor: '#e67e22' },
+            { num: 17, sym: 'Cl', name: 'Хлор', state: 'gas', danger: 60, color: '#2ecc71' },
+            { num: 19, sym: 'K', name: 'Калий', state: 'solid', danger: 85, color: '#a29bfe', meltTemp: 63, liquidColor: '#6c5ce7' },
+            { num: 20, sym: 'Ca', name: 'Кальций', state: 'solid', danger: 20, color: '#dfe6e9', meltTemp: 842, liquidColor: '#f5f6fa' },
+            { num: 22, sym: 'Ti', name: 'Титан', state: 'solid', danger: 10, color: '#718093', meltTemp: 1668, liquidColor: '#dcdde1' },
+            { num: 26, sym: 'Fe', name: 'Железо', state: 'solid', danger: 5, color: '#57606f', meltTemp: 1538, liquidColor: '#ff3f34' },
+            { num: 29, sym: 'Cu', name: 'Медь', state: 'solid', danger: 5, color: '#b87333', meltTemp: 1085, liquidColor: '#2ecc71' },
+            { num: 47, sym: 'Ag', name: 'Серебро', state: 'solid', danger: 5, color: '#dcdde1', meltTemp: 961, liquidColor: '#f5f6fa' },
+            { num: 79, sym: 'Au', name: 'Золото', state: 'solid', danger: 0, color: '#ffd32a', meltTemp: 1064, liquidColor: '#f1c40f' },
+            { num: 92, sym: 'U', name: 'Уран', state: 'solid', danger: 95, color: '#26de81', meltTemp: 1132, liquidColor: '#00ff66' }
+        ];
+
+        let ingredients = [];
+        let dangerLevel = 0;
+        let fillPercent = 0;
+        let temperature = 20; 
+        let holdTimer = null;
+        let heatTimer = null;
+        let isExploded = false;
+        let currentSolid = null;
+        let activeLiquidColor = '#1e90ff';
+
+        // Эффекты
+        let isLuminescent = false;
+        let isFrozen = false;
+        let isGel = false;
+        let snakeActive = false;
+
+        const pCanvas = document.getElementById('particles-canvas');
+        const pCtx = pCanvas.getContext('2d');
+        const sCanvas = document.getElementById('snake-canvas');
+        const sCtx = sCanvas.getContext('2d');
+
+        function resizeCanvases() {
+            pCanvas.width = pCanvas.offsetWidth;
+            pCanvas.height = pCanvas.offsetHeight;
+            sCanvas.width = sCanvas.offsetWidth;
+            sCanvas.height = sCanvas.offsetHeight;
+        }
+        window.addEventListener('resize', resizeCanvases);
+        setTimeout(resizeCanvases, 100);
+
+        // Управление закрытием/открытием блокнота
+        function closeNotebook() {
+            document.getElementById('notebook').classList.add('hidden');
+            document.getElementById('openNotebookBtn').style.display = 'block';
+        }
+
+        function openNotebook() {
+            document.getElementById('notebook').classList.remove('hidden');
+            document.getElementById('openNotebookBtn').style.display = 'none';
+        }
+
+        // Частицы
+        let particles = [];
+        class Particle {
+            constructor(x, y, color, size, speedY, life) {
+                this.x = x; this.y = y;
+                this.color = color;
+                this.size = size;
+                this.speedY = speedY;
+                this.speedX = (Math.random() - 0.5) * 1.5;
+                this.life = life;
+                this.maxLife = life;
+            }
+            update() {
+                this.y -= this.speedY;
+                this.x += this.speedX;
+                this.life--;
+            }
+            draw(ctx) {
+                ctx.save();
+                ctx.globalAlpha = this.life / this.maxLife;
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        function emitParticles(color, count = 2) {
+            const centerX = pCanvas.width / 2;
+            const startY = pCanvas.height - 100;
+            for (let i = 0; i < count; i++) {
+                particles.push(new Particle(
+                    centerX + (Math.random() - 0.5) * 30,
+                    startY,
+                    color,
+                    Math.random() * 6 + 3,
+                    Math.random() * 2 + 1,
+                    Math.random() * 40 + 20
+                ));
+            }
+        }
+
+        let wavePhase = 0;
+        function renderLoop() {
+            pCtx.clearRect(0, 0, pCanvas.width, pCanvas.height);
+            
+            for (let i = particles.length - 1; i >= 0; i--) {
+                particles[i].update();
+                particles[i].draw(pCtx);
+                if (particles[i].life <= 0) particles.splice(i, 1);
+            }
+
+            if (temperature > 100 && fillPercent > 0 && !isExploded) {
+                emitParticles(isFrozen ? '#ffffff' : activeLiquidColor, 3);
+            }
+
+            if (fillPercent > 0 && !isExploded) {
+                wavePhase += 0.08;
+                updateLiquidPath();
+            }
+
+            if (snakeActive) {
+                drawSnake();
+            }
+
+            requestAnimationFrame(renderLoop);
+        }
+        requestAnimationFrame(renderLoop);
+
+        function updateLiquidPath() {
+            const minY = 127;
+            const maxY = 25;
+            const currentY = minY - ((minY - maxY) * (fillPercent / 100));
+            const wave = Math.sin(wavePhase) * (temperature > 80 ? 3 : 1.5);
+
+            const path = `M 9 127 L 91 127 L 91 ${currentY} Q 50 ${currentY + wave} 9 ${currentY} Z`;
+            document.getElementById('liquid-path').setAttribute('d', path);
+        }
+
+        function renderPeriodicTable(data) {
+            const table = document.getElementById('periodicTable');
+            table.innerHTML = '';
+            data.forEach(el => {
+                const div = document.createElement('div');
+                div.className = 'element';
+                div.innerHTML = `<b>${el.num} ${el.sym}</b> - ${el.name}`;
+                setupHoldEvents(div, el.sym, `${el.name} (${el.sym})`, el.state, el.danger, el.color, el);
+                table.appendChild(div);
+            });
+        }
+
+        function filterElements() {
+            const query = document.getElementById('searchInput').value.toLowerCase();
+            const filtered = elementsData.filter(e => 
+                e.name.toLowerCase().includes(query) || 
+                e.sym.toLowerCase().includes(query)
+            );
+            renderPeriodicTable(filtered);
+        }
+
+        function setupHoldEvents(btnElement, id, name, state, danger, colorHex, rawData = null) {
+            const startAdding = (e) => {
+                e.preventDefault();
+                if (isExploded) return;
+                triggerVibration();
+
+                addIngredientStep(id, name, state, danger, colorHex, 2, rawData);
+
+                if (state === 'liquid') {
+                    clearInterval(holdTimer);
+                    holdTimer = setInterval(() => {
+                        addIngredientStep(id, name, state, danger, colorHex, 2, rawData);
+                    }, 50); 
+                }
+            };
+
+            const stopAdding = () => clearInterval(holdTimer);
+
+            btnElement.addEventListener('mousedown', startAdding);
+            btnElement.addEventListener('mouseup', stopAdding);
+            btnElement.addEventListener('mouseleave', stopAdding);
+            btnElement.addEventListener('touchstart', startAdding);
+            btnElement.addEventListener('touchend', stopAdding);
+        }
+
+        const heatBtn = document.getElementById('btn-heat');
+        const flame = document.getElementById('flame');
+        const startHeating = (e) => {
+            e.preventDefault();
+            if (isExploded) return;
+            triggerVibration();
+            flame.style.height = '35px';
+            flame.style.opacity = '1';
+
+            clearInterval(heatTimer);
+            heatTimer = setInterval(() => {
+                heatUp(15);
+            }, 50);
+        };
+        const stopHeating = () => {
+            clearInterval(heatTimer);
+            flame.style.height = '0px';
+            flame.style.opacity = '0';
+        };
+
+        heatBtn.addEventListener('mousedown', startHeating);
+        heatBtn.addEventListener('mouseup', stopHeating);
+        heatBtn.addEventListener('mouseleave', stopHeating);
+        heatBtn.addEventListener('touchstart', startHeating);
+        heatBtn.addEventListener('touchend', stopHeating);
+
+        setupHoldEvents(document.getElementById('btn-H2O'), 'H2O', 'Вода (H₂O)', 'liquid', 0, '#1e90ff');
+        setupHoldEvents(document.getElementById('btn-HCl'), 'HCl', 'Кислота HCl', 'liquid', 30, '#ff4757');
+        setupHoldEvents(document.getElementById('btn-H2O2'), 'H2O2', 'Перекись H₂O₂', 'liquid', 15, '#70a1ff');
+        setupHoldEvents(document.getElementById('btn-Luminol'), 'Luminol', 'Люминол', 'liquid', 5, '#eccc68');
+        setupHoldEvents(document.getElementById('btn-Gluconate'), 'Gluconate', 'Глюконат', 'solid', 10, '#f1f2f6');
+        setupHoldEvents(document.getElementById('btn-N2'), 'LN2', 'Жидкий Азот', 'liquid', 20, '#ffffff');
+
+        renderPeriodicTable(elementsData);
+
+        function addIngredientStep(id, name, state, danger, colorHex, increment = 2, rawData = null) {
+            if (isExploded) return;
+
+            if (fillPercent >= 100 && state === 'liquid') {
+                log("⚠ Колба переполнена!");
+                clearInterval(holdTimer);
+                return;
+            }
+
+            if (!ingredients.includes(id)) {
+                ingredients.push(id);
+            }
+
+            dangerLevel = Math.min(100, dangerLevel + danger * 0.05);
+
+            if (state === 'solid') {
+                currentSolid = rawData || { sym: id, name: name, color: colorHex, meltTemp: 800, liquidColor: '#ff5252' };
+                const solid = document.getElementById('solid-in-flask');
+                solid.style.display = 'block';
+                solid.setAttribute('fill', colorHex || '#8b949e');
+                log(`Положен реагент: ${name}`);
+                clearInterval(holdTimer);
+            } else if (state === 'liquid') {
+                fillPercent = Math.min(100, fillPercent + increment);
+                activeLiquidColor = colorHex;
+                document.getElementById('liquid-path').setAttribute('fill', colorHex);
+            }
+
+            updateDangerMeter();
+            updateContentsText();
+            checkReactions();
+        }
+
+        function heatUp(amount) {
+            if (isExploded) return;
+            temperature += amount;
+            document.getElementById('temp-text').innerText = `${temperature}°C`;
+
+            // Плавление металлов
+            if (currentSolid && currentSolid.meltTemp && temperature >= currentSolid.meltTemp) {
+                log(`🔥 РАСПЛАВЛЕНИЕ: ${currentSolid.name}!`);
+                
+                const solid = document.getElementById('solid-in-flask');
+                solid.style.transform = 'scale(0)';
+                setTimeout(() => { solid.style.display = 'none'; }, 500);
+
+                fillPercent = Math.min(100, fillPercent + 20);
+                activeLiquidColor = currentSolid.liquidColor || '#ff3f34';
+                document.getElementById('liquid-path').setAttribute('fill', activeLiquidColor);
+                currentSolid = null;
+            }
+
+            // РЕАКЦИЯ 1: Адское Пламя Серы
+            if (ingredients.includes('S') && temperature > 444) {
+                emitParticles('#8854d0', 8);
+                log("🔥 РЕАКЦИЯ: Сера горит ядовитым сине-фиолетовым пламенем!");
+            }
+
+            // РЕАКЦИЯ 4: Искры Титана
+            if (ingredients.includes('Ti') && ingredients.includes('HCl') && temperature > 300) {
+                emitParticles('#dcdde1', 6);
+                log("🌟 РЕАКЦИЯ: Искрение титана в горячей кислоте!");
+            }
+
+            if (ingredients.includes('Gluconate') && temperature >= 300 && !snakeActive) {
+                snakeActive = true;
+                log("🐍 РЕАКЦИЯ: Вырастает Фараонова Змея!");
+            }
+
+            if (temperature > 5000 && !isExploded) {
+                triggerSuperExplosion("ПЛАЗМЕННЫЙ ПЕРЕГРЕВ (>5000°C)!");
+            }
+
+            dangerLevel = Math.min(100, dangerLevel + 0.6);
+            updateDangerMeter();
+            checkReactions();
+        }
+
+        function checkReactions() {
+            // РЕАКЦИЯ 2: Белый Фосфор
+            if (ingredients.includes('P') && ingredients.includes('O') && !isExploded) {
+                emitParticles('#ffffff', 15);
+                log("⚡ РЕАКЦИЯ: Самовозгорание Белого Фосфора!");
+                dangerLevel += 30;
+            }
+
+            // РЕАКЦИЯ 3: Калиевая Вспышка
+            if (ingredients.includes('K') && ingredients.includes('H2O') && !isExploded) {
+                triggerSuperExplosion("ФИОЛЕТОВАЯ ДЕТОНАЦИЯ КАЛИЯ С ВОДОЙ!");
+            }
+
+            // РЕАКЦИЯ 5: Зеркальное Серебро
+            if (ingredients.includes('Ag') && ingredients.includes('H2O2')) {
+                document.getElementById('flask-glass-border').setAttribute('stroke', 'url(#silver-mirror)');
+                log("🪞 РЕАКЦИЯ: На стенках колбы выпало Зеркальное Серебро!");
+            }
+
+            if (ingredients.includes('Luminol') && ingredients.includes('H2O2') && !isLuminescent) {
+                isLuminescent = true;
+                const glow = document.getElementById('flask-glow');
+                glow.style.background = 'radial-gradient(circle, rgba(0,255,200,0.8) 0%, transparent 70%)';
+                glow.style.opacity = '1';
+                activeLiquidColor = '#00f5d4';
+                document.getElementById('liquid-path').setAttribute('fill', activeLiquidColor);
+                log("🌟 РЕАКЦИЯ: Хемилюминесцентное свечение!");
+            }
+
+            if (ingredients.includes('LN2') && !isFrozen) {
+                isFrozen = true;
+                temperature = -196;
+                document.getElementById('temp-text').innerText = `${temperature}°C`;
+                document.getElementById('frost-layer').style.opacity = '1';
+                document.getElementById('state-tag').innerText = 'Заморожено ❄️';
+                log("❄️ РЕАКЦИЯ: Крио-Заморозка!");
+                emitParticles('#ffffff', 20);
+            }
+        }
+
+        let snakeLen = 0;
+        function drawSnake() {
+            if (snakeLen < 120) snakeLen += 0.8;
+
+            const startX = sCanvas.width / 2;
+            const startY = sCanvas.height - 30;
+
+            sCtx.clearRect(0, 0, sCanvas.width, sCanvas.height);
+            sCtx.beginPath();
+            sCtx.lineWidth = 12;
+            sCtx.strokeStyle = '#2d3436';
+            sCtx.lineCap = 'round';
+
+            sCtx.moveTo(startX, startY);
+            for (let i = 0; i < snakeLen; i++) {
+                const x = startX + Math.sin(i * 0.1) * (i * 0.3);
+                const y = startY - i * 1.8;
+                sCtx.lineTo(x, y);
+            }
+            sCtx.stroke();
+        }
+
+        function triggerSuperExplosion(reason) {
+            isExploded = true;
+            clearInterval(heatTimer);
+            clearInterval(holdTimer);
+
+            log(`💥 ВЗРЫВ: ${reason}`);
+
+            const flash = document.getElementById('flash');
+            flash.style.opacity = '1';
+            setTimeout(() => { flash.style.opacity = '0'; }, 250);
+
+            document.body.classList.add('shake', 'crack-screen');
+            setTimeout(() => document.body.classList.remove('shake'), 600);
+
+            document.getElementById('flask-wrapper').style.opacity = '0';
+            document.body.classList.add('dirty-lab');
+
+            spawnShards();
+            dangerLevel = 100;
+            updateDangerMeter();
+        }
+
+        function spawnShards() {
+            const shardsOverlay = document.getElementById('shards-overlay');
+            shardsOverlay.innerHTML = '';
+
+            const flaskRect = document.getElementById('lab-bench').getBoundingClientRect();
+            const centerX = flaskRect.left + flaskRect.width / 2;
+            const centerY = flaskRect.top + flaskRect.height / 2;
+
+            for (let i = 0; i < 45; i++) {
+                const shard = document.createElement('div');
+                shard.className = 'glass-shard';
+
+                const w = Math.random() * 22 + 6;
+                const h = Math.random() * 32 + 8;
+                shard.style.width = w + 'px';
+                shard.style.height = h + 'px';
+
+                shard.style.left = centerX + 'px';
+                shard.style.top = centerY + 'px';
+
+                const angle = Math.random() * Math.PI * 2;
+                const distance = Math.random() * (window.innerWidth * 0.5) + 100;
+                const dx = Math.cos(angle) * distance + 'px';
+                const dy = (Math.sin(angle) * distance + (Math.random() * 200)) + 'px';
+                const rot = (Math.random() - 0.5) * 1000 + 'deg';
+
+                shard.style.setProperty('--dx', dx);
+                shard.style.setProperty('--dy', dy);
+                shard.style.setProperty('--rot', rot);
+
+                shardsOverlay.appendChild(shard);
+            }
+        }
+
+        function updateDangerMeter() {
+            const fill = document.getElementById('danger-fill');
+            const text = document.getElementById('danger-text');
+            fill.style.width = dangerLevel + '%';
+
+            if (dangerLevel < 30) {
+                fill.style.backgroundColor = '#238636';
+                text.innerText = `Безопасно (${Math.round(dangerLevel)}%)`;
+                text.style.color = '#3fb950';
+            } else if (dangerLevel < 70) {
+                fill.style.backgroundColor = '#d29922';
+                text.innerText = `Опасно (${Math.round(dangerLevel)}%)`;
+                text.style.color = '#d29922';
+            } else {
+                fill.style.backgroundColor = '#da3633';
+                text.innerText = `КРИТИЧЕСКИ! (${Math.round(dangerLevel)}%)`;
+                text.style.color = '#f85149';
+            }
+        }
+
+        function updateContentsText() {
+            const text = document.getElementById('contents-text');
+            const listStr = ingredients.length === 0 ? '<i>Пусто</i>' : '<b>' + ingredients.join(' + ') + '</b>';
+            text.innerHTML = `Заполнено: <b>${fillPercent}%</b> | Состав: ${listStr}`;
+        }
+
+        function triggerVibration() {
+            if (navigator.vibrate) {
+                navigator.vibrate(25);
+            }
+        }
+
+        function resetLab() {
+            clearInterval(holdTimer);
+            clearInterval(heatTimer);
+            ingredients = [];
+            particles = [];
+            dangerLevel = 0;
+            fillPercent = 0;
+            temperature = 20;
+            isExploded = false;
+            currentSolid = null;
+            isLuminescent = false;
+            isFrozen = false;
+            isGel = false;
+            snakeActive = false;
+            snakeLen = 0;
+
+            document.getElementById('temp-text').innerText = '20°C';
+            document.body.classList.remove('dirty-lab', 'crack-screen');
+            
+            const glow = document.getElementById('flask-glow');
+            glow.style.opacity = '0';
+
+            document.getElementById('frost-layer').style.opacity = '0';
+            document.getElementById('flask-glass-border').setAttribute('stroke', '#8b949e');
+            document.getElementById('state-tag').innerText = 'Жидкое';
+
+            const wrapper = document.getElementById('flask-wrapper');
+            wrapper.style.opacity = '1';
+
+            document.getElementById('shards-overlay').innerHTML = '';
+            sCtx.clearRect(0, 0, sCanvas.width, sCanvas.height);
+
+            const solid = document.getElementById('solid-in-flask');
+            solid.style.display = 'none';
+            solid.style.transform = 'scale(1)';
+
+            activeLiquidColor = '#1e90ff';
+            document.getElementById('liquid-path').setAttribute('fill', activeLiquidColor);
+            
+            updateDangerMeter();
+            updateContentsText();
+            log("🧼 Лаборатория полностью восстановлена.");
+        }
+
+        function log(message) {
+            const logBox = document.getElementById('log');
+            logBox.innerHTML += `> ${message}<br>`;
+            logBox.scrollTop = logBox.scrollHeight;
+        }
+    </script>
+</body>
+</html>
